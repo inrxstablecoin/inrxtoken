@@ -199,34 +199,6 @@ contract Pausable is Ownable {
 
 }
 
-contract Blacklistable is Ownable {
-    mapping(address => bool) internal blacklisted;
-
-    event Blacklisted(address indexed _account);
-    event UnBlacklisted(address indexed _account);
-
-    
-    modifier notBlacklisted(address _account) {
-        require( !blacklisted[_account],"Blacklistable: account is blacklisted");
-        _;
-    }
-
-    function isBlacklisted(address _account) external view returns (bool) {
-        return blacklisted[_account];
-    }
-
-    function blacklist(address _account) external onlyOwner {
-        blacklisted[_account] = true;
-        emit Blacklisted(_account);
-    }
-
-    function unBlacklist(address _account) external onlyOwner {
-        blacklisted[_account] = false;
-        emit UnBlacklisted(_account);
-    }
-
-}
-
 interface IERC20Metadata is IERC20Mintable {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
@@ -410,7 +382,7 @@ abstract contract EIP712 {
     }
 }
 
-contract INRx is  Ownable, Pausable, Blacklistable,Initializable, IERC20Permit, EIP712  {
+contract INRx is  Ownable, Pausable, Initializable, IERC20Permit, EIP712  {
     using Counters for Counters.Counter;
 
     string public name;
@@ -448,7 +420,7 @@ contract INRx is  Ownable, Pausable, Blacklistable,Initializable, IERC20Permit, 
         tokenContract.transfer(to, amount);
     }
 
-    function mint(address to, uint256 amount) external override whenNotPaused onlyMinters notBlacklisted(msg.sender) notBlacklisted(to) returns (bool) {
+    function mint(address to, uint256 amount) external override whenNotPaused onlyMinters returns (bool) {
         require(to != address(0), "ERC20: mint to the zero address");
         require(amount > 0, "ERC20: mint amount not greater than 0");
 
@@ -484,7 +456,7 @@ contract INRx is  Ownable, Pausable, Blacklistable,Initializable, IERC20Permit, 
         return balances[account];
     }
  
-    function approve(address spender, uint256 value) external override whenNotPaused notBlacklisted(msg.sender) notBlacklisted(spender) returns (bool) {
+    function approve(address spender, uint256 value) external override whenNotPaused returns (bool) {
         _approve(msg.sender, spender, value);
         return true;
     }
@@ -496,14 +468,14 @@ contract INRx is  Ownable, Pausable, Blacklistable,Initializable, IERC20Permit, 
         emit Approval(owner, spender, value);
     }
 
-    function transferFrom(address from, address to, uint256 value) external override whenNotPaused notBlacklisted(msg.sender) notBlacklisted(from) notBlacklisted(to) returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external override whenNotPaused  returns (bool) {
         require(value <= allowed[from][msg.sender], "ERC20: transfer amount exceeds allowance");
         _transfer(from, to, value);
         allowed[from][msg.sender] -= value;
         return true;
     }
 
-    function transfer(address to, uint256 value) external override whenNotPaused notBlacklisted(msg.sender) notBlacklisted(to) returns (bool) {
+    function transfer(address to, uint256 value) external override whenNotPaused  returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
     }
@@ -544,12 +516,12 @@ contract INRx is  Ownable, Pausable, Blacklistable,Initializable, IERC20Permit, 
         emit Transfer(msg.sender, address(0), amount);
     }
 
-    function increaseAllowance(address spender, uint256 increment) external whenNotPaused notBlacklisted(msg.sender) notBlacklisted(spender) returns (bool) {
+    function increaseAllowance(address spender, uint256 increment) external whenNotPaused  returns (bool) {
         _increaseAllowance(msg.sender, spender, increment);
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 decrement) external whenNotPaused notBlacklisted(msg.sender) notBlacklisted(spender) returns (bool) {
+    function decreaseAllowance(address spender, uint256 decrement) external whenNotPaused  returns (bool) {
         _decreaseAllowance(msg.sender, spender, decrement);
         return true;
     }
@@ -570,7 +542,7 @@ contract INRx is  Ownable, Pausable, Blacklistable,Initializable, IERC20Permit, 
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public whenNotPaused  notBlacklisted(owner) notBlacklisted(spender) virtual override {
+    ) public whenNotPaused virtual override {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
 
         bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
